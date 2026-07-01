@@ -14,11 +14,22 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "shell",
+        "matcher": "^Bash$",
         "hooks": [
           {
             "type": "command",
             "command": "\"${PLUGIN_ROOT}\"/scripts/codex/wrap-bash.py"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${PLUGIN_ROOT}\"/scripts/codex/reprobe-direnv.sh"
           }
         ]
       }
