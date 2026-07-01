@@ -1,0 +1,22 @@
+{
+  "name": "procrastivity-codex",
+  "interface": {
+    "displayName": "procrastivity (Codex)"
+  },
+  "plugins": [
+    {
+      "name": "direnv-session-loader",
+      "displayName": "direnv Session Loader",
+      "source": {
+        "source": "local",
+        "path": "./plugins/direnv-session-loader"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Development & Workflow",
+      "description": "Loads the project's direnv .envrc at session start (worktree-aware) and wraps shell tool calls with `direnv exec` so Codex's non-interactive shell inherits the environment."
+    }
+  ]
+}

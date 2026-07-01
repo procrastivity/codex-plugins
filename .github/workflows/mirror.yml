@@ -1,0 +1,71 @@
+name: mirror
+
+on:
+  repository_dispatch:
+    types: [mirror-plugin]
+  workflow_dispatch:
+    inputs:
+      plugin:
+        description: 'Plugin name (subdirectory under plugins/)'
+        required: true
+      source_repo:
+        description: 'Source GitHub repo (owner/name)'
+        required: true
+      ref:
+        description: 'Tag or branch to mirror'
+        required: true
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve inputs
+        id: input
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            plugin="${{ inputs.plugin }}"
+            source_repo="${{ inputs.source_repo }}"
+            ref="${{ inputs.ref }}"
+          else
+            plugin="${{ github.event.client_payload.plugin }}"
+            source_repo="${{ github.event.client_payload.source_repo }}"
+            ref="${{ github.event.client_payload.ref }}"
+          fi
+          for var in plugin source_repo ref; do
+            if [ -z "${!var}" ]; then
+              echo "error: missing $var" >&2
+              exit 1
+            fi
+          done
+          {
+            echo "plugin=$plugin"
+            echo "source_repo=$source_repo"
+            echo "ref=$ref"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Mirror plugin
+        id: mirror
+        run: |
+          set -eo pipefail
+          src_sha=$(scripts/mirror-plugin.sh \
+            "${{ steps.input.outputs.plugin }}" \
+            "${{ steps.input.outputs.source_repo }}" \
+            "${{ steps.input.outputs.ref }}" \
+            | tee /dev/stderr | tail -n1)
+          echo "src_sha=$src_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add plugins/
+          if git diff --cached --quiet; then
+            echo "no changes to commit"
+            exit 0
+          fi
+          git commit -m "mirror: ${{ steps.input.outputs.plugin }}@${{ steps.input.outputs.ref }} (source ${{ steps.mirror.outputs.src_sha }})"
+          git push
